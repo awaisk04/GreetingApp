@@ -1,0 +1,5 @@
+- [x] Add getGreeting function to return greeting and emoji based on hour
+- [x] Update setTitle to use getGreeting for dynamic greeting and emoji
+- [x] Update buildShareText to use dynamic greeting
+- [x] Remove unused greeting logic in setDayTheme
+- [ ] Test the changes by opening index.html in browser

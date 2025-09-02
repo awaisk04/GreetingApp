@@ -193,6 +193,18 @@
         { n:'Saturday',  icon:'🧡', morningQuote:'Make memories. Recharge your spirit.', nightQuote:'Enjoy the evening, recharge your soul.' }
       ];
 
+      function getGreeting(hour){
+        if(hour >= 6 && hour < 12){
+          return { greeting: "Good Morning", emoji: "🌅" };
+        } else if(hour >= 12 && hour < 18){
+          return { greeting: "Good Afternoon", emoji: "☀️" };
+        } else if(hour >= 18 && hour < 24){
+          return { greeting: "Good Evening", emoji: "🌆" };
+        } else {
+          return { greeting: "Good Night", emoji: "🌙" };
+        }
+      }
+
       function sanitizeName(str){
         if(!str) return '';
         // Strip tags, keep letters/numbers/spaces/basic punctuation
@@ -214,14 +226,6 @@
         weekdayIcon.textContent = info.icon;
         const now = new Date();
         const hour = now.getHours();
-        let greeting;
-        if(hour >= 6 && hour < 12){
-          greeting = "Good Morning";
-        } else if(hour >= 12 && hour < 18){
-          greeting = "Good Afternoon";
-        } else {
-          greeting = "Good Evening";
-        }
         subtitle.textContent = (hour >= 6 && hour < 18) ? info.morningQuote : info.nightQuote;
         dateText.textContent = now.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
       }
@@ -229,18 +233,11 @@
       function setTitle(name){
         const now = new Date();
         const hour = now.getHours();
-        let greeting;
-        if(hour >= 6 && hour < 12){
-          greeting = "Good Morning";
-        } else if(hour >= 12 && hour < 18){
-          greeting = "Good Afternoon";
-        } else {
-          greeting = "Good Evening";
-        }
+        const { greeting, emoji } = getGreeting(hour);
         if(name){
-          title.textContent = `${greeting}, ${name}!`;
+          title.textContent = `${greeting}, ${name}! ${emoji}`;
         } else {
-          title.textContent = `${greeting}, Friend!`;
+          title.textContent = `${greeting}, Friend! ${emoji}`;
         }
       }
 
@@ -254,7 +251,8 @@
 
       function buildShareText(name){
         const d = weekdays[new Date().getDay()].n;
-        const base = name ? `Good Morning, ${name}!` : 'Good Morning!';
+        const { greeting } = getGreeting(new Date().getHours());
+        const base = name ? `${greeting}, ${name}!` : `${greeting}!`;
         return `${base} Happy ${d}. Open your personalized card: ${location.href}`;
       }
 
