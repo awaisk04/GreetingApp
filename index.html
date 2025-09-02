@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Good Morning — Personalized Greeting</title>
+  <meta name="description" content="A lightweight, mobile-first Good Morning card that auto-detects weekday and personalizes with your name via URL or inline form." />
+  <style>
+    :root {
+      --bg1: #0ea5e9; /* sky-500 */
+      --bg2: #22c55e; /* green-500 */
+      --fg: #0f172a;  /* slate-900 */
+      --card: rgba(255,255,255,0.12);
+      --card-border: rgba(255,255,255,0.25);
+      --glow: rgba(255,255,255,0.35);
+    }
+
+    /* Weekday theme accents */
+    /* You can tweak per-day colors here */
+    [data-day="0"] { --bg1:#fb7185; --bg2:#fbbf24; } /* Sunday */
+    [data-day="1"] { --bg1:#38bdf8; --bg2:#22c55e; } /* Monday */
+    [data-day="2"] { --bg1:#a78bfa; --bg2:#22d3ee; } /* Tuesday */
+    [data-day="3"] { --bg1:#34d399; --bg2:#f59e0b; } /* Wednesday */
+    [data-day="4"] { --bg1:#f472b6; --bg2:#60a5fa; } /* Thursday */
+    [data-day="5"] { --bg1:#f59e0b; --bg2:#ef4444; } /* Friday */
+    [data-day="6"] { --bg1:#60a5fa; --bg2:#a3e635; } /* Saturday */
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: #fff;
+      overflow: hidden;
+      background: radial-gradient(1200px 800px at 20% 20%, var(--bg1), transparent),
+                  radial-gradient(1200px 800px at 80% 80%, var(--bg2), transparent),
+                  linear-gradient(135deg, #0b1220, #101828 60%);
+      position: relative;
+    }
+
+    .glass {
+      position: relative;
+      width: min(800px, 92vw);
+      margin: 5vh auto 2rem;
+      padding: clamp(18px, 3.2vw, 36px);
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      border: 1px solid var(--card-border);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.35), 0 0 80px var(--glow) inset;
+      backdrop-filter: blur(9px);
+    }
+
+    h1 {
+      margin: 0 0 6px 0;
+      font-size: clamp(28px, 6vw, 52px);
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      text-shadow: 0 1px 12px rgba(0,0,0,0.4);
+    }
+    .lead {
+      margin: 0 0 18px 0;
+      font-size: clamp(15px, 2.7vw, 20px);
+      opacity: 0.9;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--card-border);
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.08);
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .row > * { flex: 1 1 200px; }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      outline: none;
+      font-size: 16px;
+    }
+    input::placeholder { color: rgba(255,255,255,0.65); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(255,255,255,0.12);
+      color: #fff; font-weight: 600; letter-spacing: 0.2px;
+      cursor: pointer;
+      transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
+      user-select: none;
+    }
+    .btn:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
+    .btn:active { transform: translateY(1px) scale(0.997); }
+
+    /* Bounce animation for affiliate button */
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+      40% {transform: translateY(-12px);}
+      60% {transform: translateY(-6px);}
+    }
+    .btn-bounce {
+      animation: bounce 2s infinite;
+    }
+
+    .actions { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
+    @media (min-width: 520px) { .actions { grid-template-columns: 1fr 1fr 1fr 1fr; } }
+
+    footer {
+      position: absolute; left: 0; right: 0; bottom: 10px;
+      text-align: center;
+      font-size: 12px; opacity: 0.8;
+    }
+
+    /* Floating emojis / confetti */
+    .floaters { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+    .floater { position: absolute; font-size: 18px; opacity: 0; animation: drift linear forwards; }
+    @keyframes drift {
+      0% { transform: translateY(10vh) translateX(0) rotate(0deg); opacity: 0; }
+      10% { opacity: 0.9; }
+      100% { transform: translateY(-110vh) translateX(var(--dx)) rotate(360deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="wrap" data-day="0">
+    <div class="glass">
+      <div class="badge" id="badge">
+        <span id="weekdayIcon">☀️</span>
+        <span><strong id="weekday">Monday</strong> • <span id="dateText"></span></span>
+      </div>
+
+      <h1 id="title">Good Morning, Friend! 🌅</h1>
+      <p class="lead" id="subtitle">Wishing you a calm mind, a grateful heart, and a productive day.</p>
+
+      <div class="row" id="formRow">
+        <input id="nameInput" type="text" placeholder="Type your name… (e.g., Awais)" maxlength="40" />
+        <button class="btn" id="applyBtn" aria-label="Apply Name">Apply Name</button>
+      </div>
+
+      <div class="actions">
+      <button class="btn" id="copyBtn" aria-label="Copy personalized link">Copy Personalized Link</button>
+      <button class="btn" id="whBtn" aria-label="Share on WhatsApp"><img src="https://img.icons8.com/color/48/whatsapp--v1.png" alt="WhatsApp" style="width:20px; height:20px;"> Share on WhatsApp</button>
+      <button class="btn" id="resetBtn" aria-label="Reset">Reset</button>
+      <a href="https://amzn.to/4lTsdFI" target="_blank" rel="noopener noreferrer" class="btn btn-bounce" aria-label="Affiliate Link">Special Gift 🎁</a>
+    </div>
+    </div>
+  </div>
+
+  <div class="floaters" id="floaters" aria-hidden="true"></div>
+
+  <footer>
+    <span>Made with ❤ — Auto-detects your weekday and supports name personalization via URL: <code>?name=YourName</code></span>
+  </footer>
+
+  <script>
+    (function(){
+      const $ = (sel) => document.querySelector(sel);
+      const app = $('#app');
+      const title = $('#title');
+      const subtitle = $('#subtitle');
+      const weekdayEl = $('#weekday');
+      const weekdayIcon = $('#weekdayIcon');
+      const dateText = $('#dateText');
+      const nameInput = $('#nameInput');
+      const formRow = $('#formRow');
+      const applyBtn = $('#applyBtn');
+      const copyBtn = $('#copyBtn');
+      const whBtn = $('#whBtn');
+      const resetBtn = $('#resetBtn');
+      const floaters = $('#floaters');
+
+      const weekdays = [
+        { n:'Sunday',    icon:'😌', morningQuote:'Rest, reset, and smile into the new week.', nightQuote:'Sweet dreams, recharge for the week ahead.' },
+        { n:'Monday',    icon:'☀️', morningQuote:'Fresh start. Small steps, strong focus.', nightQuote:'End the day strong, tomorrow brings new opportunities.' },
+        { n:'Tuesday',   icon:'💪', morningQuote:'Keep momentum—progress beats perfection.', nightQuote:'Reflect on the day, prepare for progress.' },
+        { n:'Wednesday', icon:'🌿', morningQuote:'Midweek calm. Hydrate, breathe, continue.', nightQuote:'Midweek rest, dream big.' },
+        { n:'Thursday',  icon:'🚀', morningQuote:'Push a little more—weekend is waving.', nightQuote:'Almost there, rest up for the finish.' },
+        { n:'Friday',    icon:'🎉', morningQuote:'Finish well. Joy is earned by effort.', nightQuote:'Celebrate the week, unwind tonight.' },
+        { n:'Saturday',  icon:'🧡', morningQuote:'Make memories. Recharge your spirit.', nightQuote:'Enjoy the evening, recharge your soul.' }
+      ];
+
+      function sanitizeName(str){
+        if(!str) return '';
+        // Strip tags, keep letters/numbers/spaces/basic punctuation
+        str = str.replace(/[<>]/g, '').trim();
+        // Limit to 40 characters already by input attribute; enforce here too
+        return str.slice(0, 40);
+      }
+
+      function getNameFromURL(){
+        const sp = new URLSearchParams(location.search);
+        const raw = sp.get('name');
+        return sanitizeName(raw || '');
+      }
+
+      function setDayTheme(d){
+        app.setAttribute('data-day', String(d));
+        const info = weekdays[d];
+        weekdayEl.textContent = info.n;
+        weekdayIcon.textContent = info.icon;
+        const now = new Date();
+        const hour = now.getHours();
+        let greeting;
+        if(hour >= 6 && hour < 12){
+          greeting = "Good Morning";
+        } else if(hour >= 12 && hour < 18){
+          greeting = "Good Afternoon";
+        } else {
+          greeting = "Good Evening";
+        }
+        subtitle.textContent = (hour >= 6 && hour < 18) ? info.morningQuote : info.nightQuote;
+        dateText.textContent = now.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+      }
+
+      function setTitle(name){
+        const now = new Date();
+        const hour = now.getHours();
+        let greeting;
+        if(hour >= 6 && hour < 12){
+          greeting = "Good Morning";
+        } else if(hour >= 12 && hour < 18){
+          greeting = "Good Afternoon";
+        } else {
+          greeting = "Good Evening";
+        }
+        if(name){
+          title.textContent = `${greeting}, ${name}!`;
+        } else {
+          title.textContent = `${greeting}, Friend!`;
+        }
+      }
+
+      function updateURL(name){
+        const sp = new URLSearchParams(location.search);
+        if(name) { sp.set('name', name); } else { sp.delete('name'); }
+        const newUrl = `${location.pathname}?${sp.toString()}`.replace(/\?$/, '');
+        history.replaceState({}, '', newUrl);
+        return location.href;
+      }
+
+      function buildShareText(name){
+        const d = weekdays[new Date().getDay()].n;
+        const base = name ? `Good Morning, ${name}!` : 'Good Morning!';
+        return `${base} Happy ${d}. Open your personalized card: ${location.href}`;
+      }
+
+      function copyToClipboard(text){
+        return navigator.clipboard.writeText(text);
+      }
+
+      function showForm(show){
+        formRow.style.display = show ? 'flex' : 'none';
+      }
+
+      function seedFloaters(){
+        const emojis = ['✨','🌟','💫','☀️','🌼','🌈','🌿','🕊️','⭐','🎈'];
+        const total = Math.min(60, Math.max(24, Math.floor(window.innerWidth/20)));
+        floaters.innerHTML = '';
+        for(let i=0;i<total;i++){
+          const el = document.createElement('div');
+          el.className = 'floater';
+          el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+          const left = Math.random()*100;
+          const delay = Math.random()*6;
+          const duration = 8+Math.random()*8;
+          const dx = (Math.random()*2-1)*100 + 'px';
+          el.style.left = left + 'vw';
+          el.style.bottom = '-10vh';
+          el.style.animationDuration = duration + 's';
+          el.style.animationDelay = delay + 's';
+          el.style.setProperty('--dx', dx);
+          el.style.opacity = 0.85;
+          floaters.appendChild(el);
+        }
+      }
+
+      // Initialize
+      const today = new Date();
+      setDayTheme(today.getDay());
+      seedFloaters();
+
+      let currentName = getNameFromURL();
+      setTitle(currentName);
+      nameInput.value = currentName;
+      showForm(!currentName);
+
+      // Handlers
+      applyBtn.addEventListener('click', ()=>{
+        const name = sanitizeName(nameInput.value);
+        currentName = name;
+        setTitle(name);
+        // Update subtitle dynamically on apply
+        const d = new Date().getDay();
+        const info = weekdays[d];
+        const hour = new Date().getHours();
+        subtitle.textContent = (hour >= 6 && hour < 18) ? info.morningQuote : info.nightQuote;
+        updateURL(name);
+        showForm(false);
+      });
+
+      nameInput.addEventListener('keydown', (e)=>{
+        if(e.key==='Enter'){ applyBtn.click(); }
+      });
+
+      copyBtn.addEventListener('click', async ()=>{
+        const link = updateURL(currentName);
+        try {
+          await copyToClipboard(link);
+          copyBtn.textContent = 'Link Copied ✓';
+          setTimeout(()=> copyBtn.textContent = 'Copy Personalized Link', 1600);
+        } catch {
+          alert('Copy failed. You can manually copy the URL from your browser.');
+        }
+      });
+
+      whBtn.addEventListener('click', ()=>{
+        const msg = encodeURIComponent(buildShareText(currentName));
+        const url = `https://wa.me/?text=${msg}`;
+        window.open(url, '_blank');
+      });
+
+      resetBtn.addEventListener('click', ()=>{
+        currentName = '';
+        setTitle('');
+        nameInput.value = '';
+        updateURL('');
+        showForm(true);
+      });
+
+      // Resize handling for floaters density
+      let rId; window.addEventListener('resize', ()=>{
+        cancelAnimationFrame(rId);
+        rId = requestAnimationFrame(seedFloaters);
+      });
+    })();
+  </script>
+</body>
+</html> 
